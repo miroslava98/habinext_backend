@@ -1,5 +1,6 @@
 package org.example.backend_habinext.auth.controller;
 
+import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -8,11 +9,11 @@ import org.example.backend_habinext.auth.dto.RegisterDTO;
 import org.example.backend_habinext.auth.entities.Usuario;
 import org.example.backend_habinext.auth.service.AuthenticationService;
 import org.example.backend_habinext.auth.service.JwtService;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/auth")
@@ -27,14 +28,16 @@ public class AuthenticationController {
     }
 
     @PostMapping("/signup")
-    public ResponseEntity<Usuario> register(@RequestBody RegisterDTO registerUserDto) {
-        Usuario registeredUser = authenticationService.signup(registerUserDto);
+    public ResponseEntity<Usuario> register(@RequestBody @Valid RegisterDTO registerUserDto) {
+        Usuario registeredUser = null;
+        registeredUser = authenticationService.signup(registerUserDto);
+
 
         return ResponseEntity.ok(registeredUser);
     }
 
     @PostMapping("/login")
-    public ResponseEntity<LoginResponse> authenticate(@RequestBody LoginDTO loginUserDto) {
+    public ResponseEntity<LoginResponse> authenticate(@RequestBody @Valid LoginDTO loginUserDto) {
         Usuario authenticatedUser = authenticationService.login(loginUserDto);
 
         System.out.println(authenticatedUser.getCorreo());
@@ -46,6 +49,20 @@ public class AuthenticationController {
         loginResponse.setExpiresIn(jwtService.getExpirationTime());
 
         return ResponseEntity.ok(loginResponse);
+    }
+
+    @GetMapping("/perfil")
+    public ResponseEntity<?> perfilUsuario(String correo) {
+        Usuario usuario = authenticationService.perfilUsuario(correo);
+        if (usuario == null) {
+            return new ResponseEntity<>("Usuario no encontrado", HttpStatus.NOT_FOUND);
+        }
+
+        if (!usuario.isEnabled()) {
+            return new ResponseEntity<>("Usuario deshabilitado", HttpStatus.FORBIDDEN);
+        }
+
+        return new ResponseEntity<>(usuario, HttpStatus.OK);
     }
 
 

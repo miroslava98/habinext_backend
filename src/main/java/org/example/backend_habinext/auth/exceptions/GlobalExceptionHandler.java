@@ -35,4 +35,13 @@ public class GlobalExceptionHandler {
 
         return errorDetail;
     }
+
+
+    @ExceptionHandler(EmailAlreadyUsedException.class)
+    public ProblemDetail handleEmailAlreadyUsed(EmailAlreadyUsedException exception) {
+        ProblemDetail errorDetail = ProblemDetail.forStatusAndDetail(HttpStatusCode.valueOf(409), exception.getMessage());
+        errorDetail.setProperty("descripcion", "El correo electrónico ya está registrado");
+        return errorDetail;
+    }
+
 }
