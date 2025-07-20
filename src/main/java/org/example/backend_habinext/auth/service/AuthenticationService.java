@@ -60,7 +60,7 @@ public class AuthenticationService {
                 .orElseThrow();
     }
 
-    public Usuario perfilUsuario(String correo) {
+    public Usuario perfilUsuarioActual(String correo) {
         Optional<Usuario> opUsuario = userRepository.findByCorreo(correo);
         Usuario usuario = null;
         if (opUsuario.isPresent()) {
@@ -69,4 +69,6 @@ public class AuthenticationService {
 
         return usuario;
     }
+
+
 }

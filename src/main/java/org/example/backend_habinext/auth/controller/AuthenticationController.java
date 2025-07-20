@@ -4,13 +4,18 @@ import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.apache.coyote.Response;
 import org.example.backend_habinext.auth.dto.LoginDTO;
 import org.example.backend_habinext.auth.dto.RegisterDTO;
 import org.example.backend_habinext.auth.entities.Usuario;
+import org.example.backend_habinext.auth.repository.IRepositoryUsuario;
 import org.example.backend_habinext.auth.service.AuthenticationService;
 import org.example.backend_habinext.auth.service.JwtService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Optional;
@@ -22,9 +27,16 @@ public class AuthenticationController {
 
     private final AuthenticationService authenticationService;
 
-    public AuthenticationController(JwtService jwtService, AuthenticationService authenticationService) {
+    private final IRepositoryUsuario repoUsuario;
+
+    private final PasswordEncoder passwordEncoder;
+
+
+    public AuthenticationController(JwtService jwtService, AuthenticationService authenticationService, IRepositoryUsuario repoUsuario, PasswordEncoder passwordEncoder) {
         this.jwtService = jwtService;
         this.authenticationService = authenticationService;
+        this.repoUsuario = repoUsuario;
+        this.passwordEncoder = passwordEncoder;
     }
 
     @PostMapping("/signup")
@@ -51,18 +63,38 @@ public class AuthenticationController {
         return ResponseEntity.ok(loginResponse);
     }
 
-    @GetMapping("/perfil")
-    public ResponseEntity<?> perfilUsuario(String correo) {
-        Usuario usuario = authenticationService.perfilUsuario(correo);
-        if (usuario == null) {
-            return new ResponseEntity<>("Usuario no encontrado", HttpStatus.NOT_FOUND);
+    @GetMapping("/usuario")
+    public ResponseEntity<?> perfilUsuarioActual(@AuthenticationPrincipal UserDetails userDetails) {
+        if (userDetails == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
-        if (!usuario.isEnabled()) {
-            return new ResponseEntity<>("Usuario deshabilitado", HttpStatus.FORBIDDEN);
-        }
+        Usuario usuario = authenticationService.perfilUsuarioActual(userDetails.getUsername());
+
 
         return new ResponseEntity<>(usuario, HttpStatus.OK);
+    }
+
+    @PutMapping("/modificarPerfil")
+    public ResponseEntity<?> modificarUsuario(@AuthenticationPrincipal UserDetails userDetails,
+                                              @RequestBody ActualizarPerfil perfil) {
+        if (userDetails == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        Usuario usuario = authenticationService.perfilUsuarioActual(userDetails.getUsername());
+
+        if (usuario.isEnabled()) {
+            if (!perfil.getNombre().isBlank() || !perfil.getContrasenya().isBlank()) {
+                usuario.setNombre(perfil.getNombre());
+                usuario.setContrasenya(passwordEncoder.encode(perfil.getContrasenya()));
+                usuario.setImagen_perfil(perfil.getImagen_perfil());
+                repoUsuario.saveAndFlush(usuario);
+            }
+
+
+        }
+        return ResponseEntity.ok(usuario);
+
     }
 
 
@@ -74,4 +106,16 @@ public class AuthenticationController {
         private long expiresIn;
 
     }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class ActualizarPerfil {
+        private String imagen_perfil;
+        private String nombre;
+        private String contrasenya;
+
+    }
+
+
 }
