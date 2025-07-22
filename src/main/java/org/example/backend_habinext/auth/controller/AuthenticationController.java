@@ -11,6 +11,7 @@ import org.example.backend_habinext.auth.entities.Usuario;
 import org.example.backend_habinext.auth.repository.IRepositoryUsuario;
 import org.example.backend_habinext.auth.service.AuthenticationService;
 import org.example.backend_habinext.auth.service.JwtService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -27,6 +28,7 @@ public class AuthenticationController {
 
     private final AuthenticationService authenticationService;
 
+    @Autowired
     private final IRepositoryUsuario repoUsuario;
 
     private final PasswordEncoder passwordEncoder;
